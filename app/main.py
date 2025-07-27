@@ -13,6 +13,7 @@ import asyncio
 from .auth import authenticate_user, create_access_token, get_current_user, get_api_key
 from .config import settings
 from .db import create_engine, get_sessionmaker, init_db
+from . import cache
 
 app = FastAPI(title="PI Classifier API", openapi_url="/api/v1/openapi.json")
 
@@ -75,8 +76,14 @@ async def models(current_user: dict = Depends(get_current_user)):
 
 
 async def fake_classify(text: str) -> TextOut:
+    key = cache.text_key("classify", text)
+    cached = await cache.cache_get(key)
+    if cached:
+        return TextOut(**cached)
     await asyncio.sleep(0.1)
-    return TextOut(label="PI", score=0.9)
+    result = TextOut(label="PI", score=0.9)
+    await cache.cache_set(key, result.dict(), ttl=settings.classification_ttl)
+    return result
 
 
 from fastapi import Request
