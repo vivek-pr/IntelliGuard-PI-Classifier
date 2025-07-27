@@ -1,7 +1,16 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
+import fakeredis
 from app.main import app
+from app import cache
 from app.auth import create_access_token
+
+
+@pytest.fixture(autouse=True)
+def _patch_redis(monkeypatch):
+    r = fakeredis.aioredis.FakeRedis()
+    monkeypatch.setattr(cache, "redis_client", r)
+    yield
 
 @pytest.mark.asyncio
 async def test_health():
