@@ -18,3 +18,22 @@ NOTE: These files are incomplete examples. They are meant as a starting point an
 3. Use `kubectl` and `helm` to deploy resources once a Kubernetes cluster is provisioned.
 
 These examples do **not** satisfy the comprehensive production requirements outlined in the project description. They merely provide a starting framework.
+
+## API Gateway
+
+This repository now includes a minimal FastAPI-based API gateway for the PI classifier.
+
+### Running locally
+
+```bash
+pip install -r requirements.txt
+python -m app
+```
+
+The API will be available at `http://localhost:8000` and the OpenAPI docs at `/docs`.
+
+### Running tests
+
+```bash
+pytest
+```
