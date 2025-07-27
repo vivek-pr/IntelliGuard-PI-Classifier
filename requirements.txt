@@ -14,3 +14,5 @@ pytest-cov
 sqlalchemy[asyncio]
 asyncpg
 alembic
+redis>=4.5
+fakeredis>=2.21
