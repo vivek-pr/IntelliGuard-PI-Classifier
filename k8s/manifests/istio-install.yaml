@@ -1,0 +1,17 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+  name: istio-control-plane
+spec:
+  profile: minimal
+  meshConfig:
+    enablePrometheusMerge: true
+    accessLogFile: /dev/stdout
+    defaultConfig:
+      meshId: istio-mesh
+      controlPlaneAuthPolicy: MUTUAL_TLS
+  components:
+    pilot:
+      k8s:
+        replicaCount: 2
