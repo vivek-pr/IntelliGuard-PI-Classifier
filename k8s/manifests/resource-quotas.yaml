@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+  namespace: default
+spec:
+  hard:
+    cpu: "4"
+    memory: 8Gi
+    pods: "100"
