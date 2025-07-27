@@ -32,6 +32,19 @@ python -m app
 
 The API will be available at `http://localhost:8000` and the OpenAPI docs at `/docs`.
 
+### Database setup (development)
+
+The sample application uses SQLAlchemy with an async PostgreSQL engine. By default
+it stores data in a local SQLite file `app.db`. To use PostgreSQL, set the
+`DATABASE_URL` environment variable before running the app:
+
+```bash
+export DATABASE_URL="postgresql+asyncpg://user:pass@localhost/dbname"
+python -m app
+```
+
+On startup the tables defined in `app/models.py` will be created automatically.
+
 ### Running tests
 
 ```bash
