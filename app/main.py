@@ -12,6 +12,7 @@ import asyncio
 
 from .auth import authenticate_user, create_access_token, get_current_user, get_api_key
 from .config import settings
+from .db import create_engine, get_sessionmaker, init_db
 
 app = FastAPI(title="PI Classifier API", openapi_url="/api/v1/openapi.json")
 
@@ -29,6 +30,20 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_lim
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda r, e: JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"}))
 app.add_middleware(SlowAPIMiddleware)
+
+
+engine = create_engine()
+SessionLocal = get_sessionmaker(engine)
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    await init_db(engine)
+
+
+async def get_db():
+    async with SessionLocal() as session:
+        yield session
 
 
 class TextIn(BaseModel):
