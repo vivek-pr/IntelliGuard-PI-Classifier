@@ -1,0 +1,13 @@
+fastapi>=0.104
+uvicorn
+python-jose
+passlib[bcrypt]
+PyJWT
+aiosqlite
+slowapi
+pytest
+pytest-asyncio
+httpx
+pydantic-settings
+python-multipart
+pytest-cov
