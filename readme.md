@@ -50,3 +50,25 @@ On startup the tables defined in `app/models.py` will be created automatically.
 ```bash
 pytest
 ```
+
+## PI Classification Engine
+
+The API gateway bundles a lightweight personal information (PI) classifier. It
+uses regular expressions for structured entities (email, phone, SSN, credit
+card, IP addresses, URLs, dates and generic government IDs) and a tiny
+HuggingFace BERT model for free‑form entities like names or locations. The
+model is loaded lazily on first use and falls back to the regex detectors if the
+model cannot be loaded.
+
+Example usage from Python:
+
+```python
+from app.pii_classifier import PIIClassifier
+
+clf = PIIClassifier()
+print(clf.classify_text("Email me at user@example.com"))
+```
+
+The `/api/v1/classify/text` endpoint accepts a JSON body `{"text": "..."}` and
+returns a list of detected entities with confidence scores. Batch processing is
+available via `/api/v1/classify/batch`.

@@ -8,12 +8,12 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
-import asyncio
 
 from .auth import authenticate_user, create_access_token, get_current_user, get_api_key
 from .config import settings
 from .db import create_engine, get_sessionmaker, init_db
 from . import cache
+from .pii_classifier import PIIClassifier
 
 app = FastAPI(title="PI Classifier API", openapi_url="/api/v1/openapi.json")
 
@@ -51,9 +51,12 @@ class TextIn(BaseModel):
     text: str
 
 
-class TextOut(BaseModel):
-    label: str
+class DetectionOut(BaseModel):
+    pii_type: str
+    value: str
     score: float
+    start: int
+    end: int
 
 
 @app.post("/api/v1/auth/login")
@@ -72,33 +75,39 @@ async def health():
 
 @app.get("/api/v1/models")
 async def models(current_user: dict = Depends(get_current_user)):
-    return ["pi-base-model"]
+    return [settings.model_name]
 
 
-async def fake_classify(text: str) -> TextOut:
+classifier = PIIClassifier(
+    model_name=settings.model_name,
+    confidence_threshold=settings.confidence_threshold,
+)
+
+
+async def classify_pii(text: str) -> list[DetectionOut]:
     key = cache.text_key("classify", text)
     cached = await cache.cache_get(key)
     if cached:
-        return TextOut(**cached)
-    await asyncio.sleep(0.1)
-    result = TextOut(label="PI", score=0.9)
-    await cache.cache_set(key, result.dict(), ttl=settings.classification_ttl)
-    return result
+        return [DetectionOut(**c) for c in cached]
+    results = classifier.classify_text(text)
+    payload = [r.__dict__ for r in results]
+    await cache.cache_set(key, payload, ttl=settings.classification_ttl)
+    return [DetectionOut(**r) for r in payload]
 
 
 from fastapi import Request
 
 
-@app.post("/api/v1/classify/text", response_model=TextOut)
+@app.post("/api/v1/classify/text", response_model=list[DetectionOut])
 @limiter.limit(settings.rate_limit)
 async def classify_text(request: Request, payload: TextIn, api_key: str = Depends(get_api_key)):
-    return await fake_classify(payload.text)
+    return await classify_pii(payload.text)
 
 
-@app.post("/api/v1/classify/batch", response_model=list[TextOut])
+@app.post("/api/v1/classify/batch", response_model=list[list[DetectionOut]])
 @limiter.limit(settings.rate_limit)
 async def classify_batch(request: Request, payload: list[TextIn], api_key: str = Depends(get_api_key)):
     results = []
     for item in payload:
-        results.append(await fake_classify(item.text))
+        results.append(await classify_pii(item.text))
     return results

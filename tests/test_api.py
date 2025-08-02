@@ -1,4 +1,5 @@
 import pytest
+import pytest
 from httpx import AsyncClient, ASGITransport
 import fakeredis
 from app.main import app
@@ -29,7 +30,7 @@ async def test_login_and_models():
         headers = {"Authorization": f"Bearer {token}"}
         resp2 = await ac.get("/api/v1/models", headers=headers)
         assert resp2.status_code == 200
-        assert resp2.json() == ["pi-base-model"]
+        assert resp2.json() == ["hf-internal-testing/tiny-bert-for-token-classification"]
 
 
 @pytest.mark.asyncio
@@ -37,10 +38,10 @@ async def test_classify_text_api_key():
     token = create_access_token({"sub": "user@example.com"})
     headers = {"Authorization": f"Bearer {token}", "X-API-Key": "testkey"}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp = await ac.post("/api/v1/classify/text", json={"text": "hello"}, headers=headers)
+        resp = await ac.post("/api/v1/classify/text", json={"text": "Email me at user@example.com"}, headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["label"] == "PI"
+        assert data[0]["pii_type"] == "EMAIL"
 
 
 @pytest.mark.asyncio
@@ -48,7 +49,10 @@ async def test_classify_batch_rate_limit():
     token = create_access_token({"sub": "user@example.com"})
     headers = {"Authorization": f"Bearer {token}", "X-API-Key": "testkey"}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        payload = [{"text": "a"}, {"text": "b"}]
+        payload = [{"text": "call 123-456-7890"}, {"text": "visit https://example.com"}]
         resp = await ac.post("/api/v1/classify/batch", json=payload, headers=headers)
         assert resp.status_code == 200
-        assert len(resp.json()) == 2
+        results = resp.json()
+        assert len(results) == 2
+        assert results[0][0]["pii_type"] == "PHONE"
+        assert results[1][0]["pii_type"] == "URL"
