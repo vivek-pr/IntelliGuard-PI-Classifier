@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     redis_max_connections: int = 20
     redis_timeout: int = 5
     classification_ttl: int = 60 * 60 * 24  # 24 hours
+    model_name: str = "hf-internal-testing/tiny-bert-for-token-classification"
+    confidence_threshold: float = 0.85
 
     class Config:
         env_file = ".env"

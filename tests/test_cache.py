@@ -2,7 +2,7 @@ import pytest
 import fakeredis
 
 from app import cache
-from app.main import fake_classify
+from app.main import classify_pii
 
 @pytest.mark.asyncio
 async def test_cache_set_get(monkeypatch):
@@ -16,12 +16,12 @@ async def test_cache_set_get(monkeypatch):
     assert ttl > 0
 
 @pytest.mark.asyncio
-async def test_fake_classify_uses_cache(monkeypatch):
+async def test_classify_uses_cache(monkeypatch):
     r = fakeredis.aioredis.FakeRedis()
     monkeypatch.setattr(cache, "redis_client", r)
     await r.flushdb()
-    res1 = await fake_classify("hi")
-    assert await r.exists(cache.text_key("classify", "hi")) == 1
-    res2 = await fake_classify("hi")
+    res1 = await classify_pii("Contact me at user@example.com")
+    assert await r.exists(cache.text_key("classify", "Contact me at user@example.com")) == 1
+    res2 = await classify_pii("Contact me at user@example.com")
     assert res1 == res2
 
